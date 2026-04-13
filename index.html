@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indic Typing Platform</title>
+
+  <!-- Fonts (loaded up-front for simplicity) -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Oriya&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gurmukhi&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <div class="shell">
+    
+    <section class="hero">
+      <div id="badgeText" class="badge">Indic Transliteration Keyboard</div>
+    </section>
+
+    <section class="layout">
+
+      <!-- MAIN -->
+      <div class="card main-card">
+
+        <!-- TOOLBAR -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button id="clearBtn" class="btn-secondary">Clear</button>
+          </div>
+
+          <div class="toolbar-right">
+            <button id="pasteBtn" class="btn-secondary">Paste</button>
+
+            <!-- Searchable Language Picker -->
+            <div class="lang-picker" id="langPicker">
+              <button id="langPickerBtn" class="btn-secondary" type="button" aria-haspopup="listbox" aria-expanded="false">
+                Language
+              </button>
+              <div id="langPickerMenu" class="lang-menu" role="listbox" aria-label="Select language">
+                <input id="langSearch" class="lang-search" type="text" placeholder="Search language…" autocomplete="off" />
+                <div id="langList" class="lang-list"></div>
+              </div>
+              <!-- hidden native select for fallback -->
+              <select id="languageSelect" class="visually-hidden" aria-hidden="true" tabindex="-1"></select>
+            </div>
+
+            <!-- Emoji Picker -->
+            <div class="emoji-picker" id="emojiPicker">
+              <button id="emojiBtn" class="btn-secondary" type="button" aria-haspopup="dialog" aria-expanded="false">😊 Emojis</button>
+              <div id="emojiMenu" class="emoji-menu" role="dialog" aria-label="Emoji picker">
+                <div class="emoji-header">
+                  <input id="emojiSearch" class="emoji-search" type="text" placeholder="Search emoji…" autocomplete="off" />
+                  <button id="emojiClose" class="emoji-close" type="button" aria-label="Close">✖</button>
+                </div>
+                <div id="emojiTabs" class="emoji-tabs"></div>
+                <div id="emojiGrid" class="emoji-grid"></div>
+              </div>
+            </div>
+
+            <!-- Math Picker -->
+            <div class="math-picker" id="mathPicker">
+              <button id="mathBtn" class="btn-secondary" type="button" aria-haspopup="dialog" aria-expanded="false">🧮 Math</button>
+              <div id="mathMenu" class="math-menu" role="dialog" aria-label="Math symbols">
+                <div class="math-header">
+                  <div class="math-title">Math symbols</div>
+                  <button id="mathClose" class="math-close" type="button" aria-label="Close">✖</button>
+                </div>
+                <div class="math-builder">
+                  <div class="math-row">
+                    <span class="math-label">Base</span>
+                    <input id="mathBase" class="math-input" type="text" value="x" />
+                    <button id="mathInsertBase" class="math-action" type="button">Insert</button>
+                  </div>
+                  <div class="math-row">
+                    <span class="math-label">Power</span>
+                    <input id="mathPower" class="math-input" type="text" placeholder="2, 3, -2, n…" />
+                    <button id="mathInsertPow" class="math-action" type="button">x^</button>
+                    <button id="mathInsertPowNeg" class="math-action" type="button">x^(-)</button>
+                  </div>
+                  <div class="math-row">
+                    <span class="math-label">Coeff</span>
+                    <input id="mathSub" class="math-input" type="text" placeholder="2, n…" />
+                    <button id="mathInsertSub" class="math-action" type="button">x_</button>
+                  </div>
+                  <div class="math-row">
+                    <span class="math-label">Root</span>
+                    <input id="mathRootN" class="math-input" type="text" placeholder="n (optional)" />
+                    <button id="mathInsertSqrt" class="math-action" type="button">√()</button>
+                    <button id="mathInsertNthRoot" class="math-action" type="button">ⁿ√()</button>
+                  </div>
+                </div>
+                <div id="mathTabs" class="math-tabs"></div>
+                <div id="mathGrid" class="math-grid"></div>
+                <div class="math-hint">Tip: type <b>sqrt</b> then space → √</div>
+              </div>
+            </div>
+
+            <!-- Theme menu -->
+            <div class="theme-picker" id="themePicker">
+              <button id="themeBtn" class="btn-secondary" type="button" aria-haspopup="menu" aria-expanded="false">🎨 Theme</button>
+              <div id="themeMenu" class="theme-menu" role="menu" aria-label="Theme options"></div>
+            </div>
+
+            <!-- Export menu -->
+            <div class="export-picker" id="exportPicker">
+              <button id="exportBtn" class="btn-primary" type="button" aria-haspopup="menu" aria-expanded="false">⬇️ Export</button>
+              <div id="exportMenu" class="export-menu" role="menu" aria-label="Export options">
+                <button id="downloadTxt" class="export-item" role="menuitem" type="button">📄 Export TXT</button>
+                <button id="downloadPdf" class="export-item" role="menuitem" type="button">🧾 Export PDF</button>
+                <button id="exportWords" class="export-item" role="menuitem" type="button">🧠 Export Words</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OUTPUT -->
+        <div class="output-wrap">
+          <div class="output-header">
+            <div class="output-title">
+              <h2 id="typingAreaTitle" class="section-title">Typing Area</h2>
+              <div id="typingSubtitle" class="subtitle">Type in English letters. Press Tab to accept suggestions.</div>
+            </div>
+            <div class="output-actions">
+              <button id="copyBtn" class="btn-primary">Copy Output</button>
+            </div>
+          </div>
+
+          <div class="editor">
+            <div id="suggestions"></div>
+            <div id="bufferPreview" class="buffer-preview" style="display:none;"></div>
+            <div id="output" contenteditable="true"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SIDE PANEL -->
+      <aside class="side-panel">
+
+        <!-- QUICK NOTES -->
+        <div class="card info-card">
+          <h2 id="quickNotesTitle" class="section-title">Quick Notes</h2>
+          <div id="quickNotesBody" class="info-grid mt-12"></div>
+        </div>
+
+        <!-- HELP -->
+        <div class="card help-card">
+          <h2 id="typingRulesTitle" class="section-title">Typing Rules</h2>
+          <div id="typingRulesBody"></div>
+        </div>
+
+      </aside>
+
+    </section>
+  </div>
+
+  <!-- Toast notifications -->
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" style="display:none;"></div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Made with ❤️ for Indic typing</span>
+      <span class="footer-sep">•</span>
+      <span>Tip: Press <b>Tab</b> to accept the first suggestion</span>
+    </div>
+  </footer>
+
+  <!-- Language modules -->
+  <script src="languages/_brahmicCore.js"></script>
+  <script src="languages/languages.js"></script>
+  <script src="languages/english.js"></script>
+  <script src="languages/odia.js"></script>
+  <script src="languages/devanagari.js"></script>
+  <script src="languages/bengali.js"></script>
+  <script src="languages/tamil.js"></script>
+  <script src="languages/telugu.js"></script>
+  <script src="languages/kannada.js"></script>
+  <script src="languages/malayalam.js"></script>
+  <script src="languages/gujarati.js"></script>
+  <script src="languages/gurmukhi.js"></script>
+
+  <!-- Main script -->
+  <script src="script.js"></script>
+
+</body>
+</html>
