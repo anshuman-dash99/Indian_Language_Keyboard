@@ -1,5 +1,6 @@
 (() => {
-  const vowelTokens = ["aa", "ii", "uu", "ai", "au", "a", "i", "u", "e", "o"];
+  // Include vocalic R vowels so users can type kRu, gRu, etc across scripts.
+  const vowelTokens = ["RRu", "Ru", "aa", "ii", "uu", "ai", "au", "a", "i", "u", "e", "o"];
 
   function getNextVowelToken(text, index) {
     for (const v of vowelTokens) {

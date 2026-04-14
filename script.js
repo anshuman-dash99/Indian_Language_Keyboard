@@ -639,7 +639,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const danda = symbols.danda || "।";
 
     const commonDetails = document.createElement("details");
-    commonDetails.open = true;
+    commonDetails.open = false;
 
     const commonSummary = document.createElement("summary");
     commonSummary.textContent = "Common rules (all languages)";
@@ -997,12 +997,16 @@ document.addEventListener("DOMContentLoaded", () => {
 /* ========================= STORAGE ========================= */
   const dictKey = () => `dict_${activeLangId}`;
   const bigramKey = () => `bigram_${activeLangId}`;
+  const romanKey = () => `roman_${activeLangId}`;
 
   const getDict = () => JSON.parse(localStorage.getItem(dictKey()) || "{}");
   const saveDict = (d) => localStorage.setItem(dictKey(), JSON.stringify(d));
 
   const getBigram = () => JSON.parse(localStorage.getItem(bigramKey()) || "{}");
   const saveBigram = (b) => localStorage.setItem(bigramKey(), JSON.stringify(b));
+
+  const getRomanMap = () => JSON.parse(localStorage.getItem(romanKey()) || "{}");
+  const saveRomanMap = (m) => localStorage.setItem(romanKey(), JSON.stringify(m));
 
 /* ========================= LEARNING ========================= */
   function learnWord(word) {
@@ -1020,6 +1024,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const key = prev + "|" + curr;
     bigram[key] = (bigram[key] || 0) + 1;
     saveBigram(bigram);
+  }
+
+  function learnRoman(roman, chosenWord) {
+    const r = (roman || "").trim();
+    const w = (chosenWord || "").trim();
+    if (!r || !w) return;
+
+    const map = getRomanMap();
+    const entry = map[r];
+    map[r] = entry
+      ? { word: entry.word || w, freq: (entry.freq || 0) + 1, time: Date.now() }
+      : { word: w, freq: 1, time: Date.now() };
+    // If user repeatedly maps the same roman to different words, prefer most recent.
+    map[r].word = w;
+    saveRomanMap(map);
   }
 
 /* ========================= SUGGESTIONS ========================= */
@@ -1065,6 +1084,35 @@ document.addEventListener("DOMContentLoaded", () => {
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
       .map(e => e.word);
+  }
+
+  function getRomanSuggestions(roman, limit = 5) {
+    const r = (roman || "").trim();
+    if (!r) return [];
+
+    const map = getRomanMap();
+    let results = [];
+
+    for (const key in map) {
+      const data = map[key];
+      const word = data?.word;
+      if (!word) continue;
+
+      if (key.startsWith(r)) {
+        results.push({ word, score: scoreWord(data) + 12 });
+        continue;
+      }
+
+      const dist = editDistance(r, key.slice(0, r.length + 1));
+      if (dist <= 2) {
+        results.push({ word, score: scoreWord(data) - dist + 2 });
+      }
+    }
+
+    return results
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((e) => e.word);
   }
 
   function predictNextWord(limit = 5) {
@@ -1177,6 +1225,7 @@ document.addEventListener("DOMContentLoaded", () => {
     replaceWord(word);
     document.execCommand("insertText", false, " ");
     learnWord(word);
+    learnRoman(englishBuffer, word);
 
     const words = output.innerText.trim().split(/\s+/);
     const prev = words[words.length - 2];
@@ -1379,7 +1428,11 @@ document.addEventListener("DOMContentLoaded", () => {
       englishBuffer += e.data;
       const converted = engine.transliterateWord(englishBuffer);
       replaceWord(converted);
-      showSuggestions(getSuggestions(converted));
+      const suggestions = [
+        ...getRomanSuggestions(englishBuffer, 4),
+        ...getSuggestions(converted, 5),
+      ];
+      showSuggestions([...new Set(suggestions)].slice(0, 6));
       setBufferPreview(englishBuffer, converted);
       return;
     }
@@ -1413,6 +1466,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const prev = words[words.length - 1];
 
       learnWord(converted);
+      learnRoman(englishBuffer, converted);
       learnBigram(prev, converted);
 
       document.execCommand("insertText", false, " ");

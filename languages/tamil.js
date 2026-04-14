@@ -14,6 +14,8 @@
       ai: "ஐ",
       o: "ஒ",
       au: "ஔ",
+      // Tamil: āytam (ஃ). Use capital H to type it (so plain 'h' remains 'ஹ').
+      H: "ஃ",
     },
     vowelSigns: {
       a: "",
@@ -80,13 +82,15 @@
       h: "ஹ",
     },
     // Language-specific diacritics/symbols
-    // Tamil uses 'ஂ' (anusvara) and 'ஃ' (āytam) rather than Devanagari 'ँ/ः'.
+    // Tamil does not use visarga; keep visarga heuristics disabled (visarga: "").
+    // Use H -> ஃ (āytam) via independentVowels above.
     anusvara: "ஂ",
     chandrabindu: "ஂ",
-    visarga: "ஃ",
+    visarga: "",
     virama: "்",
     digits: ["௦", "௧", "௨", "௩", "௪", "௫", "௬", "௭", "௮", "௯"],
     danda: "।",
+    extraTokenOrder: ["H"],
   });
 
   window.registerIndicLanguage?.({
@@ -116,15 +120,47 @@
     rules: {
       sections: [
         {
-          title: "அடிப்படை",
+          title: "உயிரெழுத்துகள் (Vowels)",
           items: [
+            { left: "a", right: "அ" },
             { left: "aa", right: "ஆ" },
             { left: "i", right: "இ" },
+            { left: "ii", right: "ஈ" },
             { left: "u", right: "உ" },
+            { left: "uu", right: "ஊ" },
+            { left: "e", right: "எ" },
+            { left: "ai", right: "ஐ" },
+            { left: "o", right: "ஒ" },
+            { left: "au", right: "ஔ" },
+            { left: "M", right: "ஂ" },
+            { left: "MM", right: "ஂ" },
+            { left: "H", right: "ஃ" },
+          ],
+        },
+        {
+          title: "மெய்யெழுத்துகள் (Consonants)",
+          items: [
             { left: "k", right: "க" },
+            { left: "g", right: "க" },
+            { left: "ch/c", right: "ச" },
+            { left: "j", right: "ஜ" },
             { left: "t", right: "த" },
+            { left: "T", right: "ட" },
             { left: "p", right: "ப" },
+            { left: "b", right: "ப" },
             { left: "m", right: "ம" },
+            { left: "y", right: "ய" },
+            { left: "r", right: "ர" },
+            { left: "l", right: "ல" },
+            { left: "L", right: "ள" },
+            { left: "v/w", right: "வ" },
+            { left: "n", right: "ந" },
+            { left: "N", right: "ண" },
+            { left: "s", right: "ஸ" },
+            { left: "h", right: "ஹ" },
+            { left: "sh/Sh", right: "ஷ" },
+            { left: "ksh", right: "க்ஷ" },
+            { left: "jna", right: "ஜ்ஞ" },
           ],
         },
       ],
