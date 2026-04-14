@@ -461,6 +461,15 @@
       transliterateText,
       mapDigit: (ch) => digits[ch.charCodeAt(0) - 48] ?? null,
       mapPunctuation: (ch) => (ch === "|" ? "।" : null),
+      // Expose script-specific symbols so the app's "Common rules" panel
+      // can render MM/visarga/etc per language (instead of falling back).
+      symbols: {
+        anusvara: "ଂ",
+        chandrabindu: "ଁ",
+        visarga: "ଃ",
+        virama: "୍",
+        danda: "।",
+      },
     },
     ui: {
       badge: "ଓଡ଼ିଆ ଲିପ୍ୟନ୍ତରଣ କୀବୋର୍ଡ",

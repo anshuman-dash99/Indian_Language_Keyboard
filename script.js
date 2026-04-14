@@ -759,7 +759,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (copyBtn) copyBtn.textContent = ui.copy || "Copy Output";
     if (pasteBtn) pasteBtn.textContent = ui.paste || "Paste";
     if (clearBtn) clearBtn.textContent = ui.clear || "Clear";
-    if (exportWords) exportWords.textContent = ui.exportWords || "🧠 Export Words";
+    if (exportWords) exportWords.textContent = ui.exportWords || "📝 Export Word (.docx)";
     if (downloadPdf) downloadPdf.textContent = ui.exportPdf || "🧾 Export PDF";
     if (downloadTxt) downloadTxt.textContent = ui.exportTxt || "Export TXT";
 
@@ -1244,33 +1244,56 @@ document.addEventListener("DOMContentLoaded", () => {
     closeExportMenu();
   });
 
-  exportWords?.addEventListener("click", () => {
+  exportWords?.addEventListener("click", async () => {
     try {
-      const payload = {
-        app: "Indic_key",
-        version: 1,
-        language: {
-          id: activeLangId,
-          name: activeLang?.name,
-          nativeName: activeLang?.nativeName,
-        },
-        exportedAt: new Date().toISOString(),
-        dict: getDict(),
-        bigram: getBigram(),
-      };
+      const text = output.innerText || "";
+      if (!text.trim()) {
+        showToast("⚠️ Nothing to export");
+        return;
+      }
 
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+      const docxLib = window.docx;
+      if (!docxLib?.Document || !docxLib?.Packer) {
+        showToast("⚠️ Word export unavailable (docx library not loaded)");
+        return;
+      }
+
+      const { Document, Packer, Paragraph, TextRun } = docxLib;
+
+      const title = activeLang?.name ? `${activeLang.name} Output` : "Output";
+      const lines = text.replace(/\r\n/g, "\n").split("\n");
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: title, bold: true })],
+              }),
+              ...lines.map((line) =>
+                new Paragraph({
+                  children: [new TextRun({ text: line || " " })],
+                })
+              ),
+            ],
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(doc);
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `learned_words_${activeLangId}.json`;
+      a.download = `output_${activeLangId}.docx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 0);
-      showToast("🧠 Exported learned words");
+
+      showToast("📝 Exported Word (.docx)");
       closeExportMenu();
     } catch {
-      showToast("⚠️ Could not export words");
+      showToast("⚠️ Could not export Word document");
     }
   });
 
@@ -1282,15 +1305,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const title = activeLang?.name ? `${activeLang.name} Output` : "Output";
-    const w = window.open("", "_blank");
-    if (!w) {
-      showToast("⚠️ Popup blocked (allow popups)");
-      return;
-    }
-
     const font = activeLang?.fontFamily || "Noto Sans, system-ui, sans-serif";
-    w.document.open();
-    w.document.write(`<!doctype html>
+    const html = `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -1304,13 +1320,23 @@ document.addEventListener("DOMContentLoaded", () => {
 </head>
 <body>
   <h1>${title}</h1>
-  <pre>${text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+  <pre>${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
   <script>
     window.onload = () => { window.print(); };
   </script>
 </body>
-</html>`);
-    w.document.close();
+</html>`;
+
+    // Use a blob URL so it works reliably even on file:// origins.
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank");
+    if (!w) {
+      URL.revokeObjectURL(url);
+      showToast("⚠️ Popup blocked (allow popups)");
+      return;
+    }
+    w.addEventListener("beforeunload", () => URL.revokeObjectURL(url));
     showToast("🧾 Opened PDF export (Print → Save as PDF)");
     closeExportMenu();
   });

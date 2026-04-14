@@ -79,9 +79,11 @@
       s: "ஸ",
       h: "ஹ",
     },
-    anusvara: "ம்",
-    chandrabindu: "ँ",
-    visarga: "ः",
+    // Language-specific diacritics/symbols
+    // Tamil uses 'ஂ' (anusvara) and 'ஃ' (āytam) rather than Devanagari 'ँ/ः'.
+    anusvara: "ஂ",
+    chandrabindu: "ஂ",
+    visarga: "ஃ",
     virama: "்",
     digits: ["௦", "௧", "௨", "௩", "௪", "௫", "௬", "௭", "௮", "௯"],
     danda: "।",
