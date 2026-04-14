@@ -495,6 +495,7 @@ document.addEventListener("DOMContentLoaded", () => {
     bufferPreview.innerHTML = `<span><b>${roman}</b> → ${converted || ""}</span><span class="chip chip-muted">Tab = accept</span>`;
   }
 
+
   /* ========================= LANGUAGE ========================= */
   function setAppFont(fontFamily) {
     document.documentElement.style.setProperty("--app-font", fontFamily);
@@ -698,6 +699,10 @@ document.addEventListener("DOMContentLoaded", () => {
       yGrid.className = "rule-grid";
 
       const examples = [
+        { left: "nka", right: engine.transliterateWord("nka") },   // common conjunct input
+        { left: "nkha", right: engine.transliterateWord("nkha") },
+        { left: "nka / Ngxk", right: engine.transliterateWord("Ngxk") }, // explicit virama form
+        { left: "nkha / Ngxkh", right: engine.transliterateWord("Ngxkh") },
         { left: "Ngk", right: engine.transliterateWord("Ngk") },   // ঙ্ + ক => ঙ্ক / ङ्क / ଙ୍କ
         { left: "Ngkh", right: engine.transliterateWord("Ngkh") },
         { left: "Ngga", right: engine.transliterateWord("Ngga") },
@@ -705,8 +710,6 @@ document.addEventListener("DOMContentLoaded", () => {
         { left: "duh", right: engine.transliterateWord("duh") },
         { left: "kah", right: engine.transliterateWord("kah") },
         { left: "namah", right: engine.transliterateWord("namah") },
-        { left: "nka", right: engine.transliterateWord("nka") },
-        { left: "nkha", right: engine.transliterateWord("nkha") },
         { left: "nga", right: engine.transliterateWord("nga") },
         { left: "ngha", right: engine.transliterateWord("ngha") },
         { left: "nja", right: engine.transliterateWord("nja") },
@@ -997,6 +1000,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /* ========================= STORAGE ========================= */
   const dictKey = () => `dict_${activeLangId}`;
   const bigramKey = () => `bigram_${activeLangId}`;
+  const trigramKey = () => `trigram_${activeLangId}`;
   const romanKey = () => `roman_${activeLangId}`;
 
   const getDict = () => JSON.parse(localStorage.getItem(dictKey()) || "{}");
@@ -1004,6 +1008,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const getBigram = () => JSON.parse(localStorage.getItem(bigramKey()) || "{}");
   const saveBigram = (b) => localStorage.setItem(bigramKey(), JSON.stringify(b));
+  const getTrigram = () => JSON.parse(localStorage.getItem(trigramKey()) || "{}");
+  const saveTrigram = (t) => localStorage.setItem(trigramKey(), JSON.stringify(t));
 
   const getRomanMap = () => JSON.parse(localStorage.getItem(romanKey()) || "{}");
   const saveRomanMap = (m) => localStorage.setItem(romanKey(), JSON.stringify(m));
@@ -1026,6 +1032,14 @@ document.addEventListener("DOMContentLoaded", () => {
     saveBigram(bigram);
   }
 
+  function learnTrigram(prev2, prev1, curr) {
+    if (!prev2 || !prev1 || !curr) return;
+    const trigram = getTrigram();
+    const key = prev2 + "|" + prev1 + "|" + curr;
+    trigram[key] = (trigram[key] || 0) + 1;
+    saveTrigram(trigram);
+  }
+
   function learnRoman(roman, chosenWord) {
     const r = (roman || "").trim();
     const w = (chosenWord || "").trim();
@@ -1045,6 +1059,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function scoreWord(data) {
     return data.freq * 2 + (Date.now() - data.time < 86400000 ? 5 : 0);
   }
+
 
   function editDistance(a, b) {
     const dp = Array(a.length + 1).fill().map(() => Array(b.length + 1).fill(0));
@@ -1120,22 +1135,41 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!text) return [];
 
     const words = text.split(/\s+/);
-    const last = words[words.length - 1];
-
+    const last = words[words.length - 1] || "";
+    const prev = words[words.length - 2] || "";
     const bigram = getBigram();
-    let results = [];
+    const trigram = getTrigram();
+    const scores = {};
+    const sourceMap = {};
 
-    for (const key in bigram) {
-      if (key.startsWith(last + "|")) {
-        const next = key.split("|")[1];
-        results.push({ word: next, score: bigram[key] });
+    // Trigram context: (w[n-2], w[n-1]) -> w[n]
+    if (prev && last) {
+      const prefix = prev + "|" + last + "|";
+      for (const key in trigram) {
+        if (key.startsWith(prefix)) {
+          const next = key.split("|")[2];
+          // Strong weight because 2-word context is most reliable.
+          scores[next] = (scores[next] || 0) + trigram[key] * 3;
+          sourceMap[next] = "context";
+        }
       }
     }
 
-    return results
+    // Bigram fallback: w[n-1] -> w[n]
+    for (const key in bigram) {
+      if (key.startsWith(last + "|")) {
+        const next = key.split("|")[1];
+        scores[next] = (scores[next] || 0) + bigram[key];
+        if (!sourceMap[next]) sourceMap[next] = "bigram";
+      }
+    }
+
+    return Object.entries(scores)
+      .map(([word, score]) => ({ word, score, source: sourceMap[word] || "bigram" }))
+      .filter((e) => e.word && e.word !== last)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
-      .map(e => e.word);
+      .map((e) => ({ word: e.word, source: e.source }));
   }
 
 /* ========================= CURSOR ========================= */
@@ -1207,10 +1241,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     suggestionsBox.style.display = "flex";
 
-    list.forEach((word) => {
+    list.forEach((item) => {
+      const word = typeof item === "string" ? item : item?.word;
+      if (!word) return;
       const el = document.createElement("span");
       el.className = "suggestion";
-      el.innerText = word;
+      el.textContent = word;
+
+      const source = typeof item === "object" ? item?.source : "";
+      if (source === "context") {
+        const tag = document.createElement("small");
+        tag.className = "suggestion-tag";
+        tag.textContent = "Context";
+        el.appendChild(tag);
+      }
 
       el.onmousedown = (e) => {
         e.preventDefault();
@@ -1229,7 +1273,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const words = output.innerText.trim().split(/\s+/);
     const prev = words[words.length - 2];
+    const prev2 = words[words.length - 3];
     learnBigram(prev, word);
+    learnTrigram(prev2, prev, word);
 
     resetState();
     showSuggestions(predictNextWord());
@@ -1463,11 +1509,15 @@ document.addEventListener("DOMContentLoaded", () => {
       setBufferPreview("", "");
 
       const words = output.innerText.trim().split(/\s+/);
-      const prev = words[words.length - 1];
+      // After replacing current token, the last word is the current word itself.
+      // Learn links from previous words to current word, not current->current.
+      const prev = words[words.length - 2];
+      const prev2 = words[words.length - 3];
 
       learnWord(converted);
       learnRoman(englishBuffer, converted);
       learnBigram(prev, converted);
+      learnTrigram(prev2, prev, converted);
 
       document.execCommand("insertText", false, " ");
       resetState();
